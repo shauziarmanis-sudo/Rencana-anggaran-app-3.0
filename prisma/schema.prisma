@@ -1,0 +1,109 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Company {
+  id        String   @id @default(uuid())
+  code      String   @unique
+  name      String
+  invoices  PurchaseInvoice[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Vendor {
+  id            String   @id @default(uuid())
+  code          String   @unique
+  name          String
+  bankAccount   String?
+  bankName      String?
+  accountName   String?
+  invoices      PurchaseInvoice[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model PurchaseInvoice {
+  id              String   @id @default(uuid())
+  noPi            String   @unique
+  tglBeli         DateTime
+  tglFaktur       DateTime?
+  tempoHari       Int      @default(0) // terms in days
+  paymentState    String   @default("unpaid") // unpaid, paid, partial
+  totalRencanaBayar Decimal  @default(0) @db.Decimal(18, 4)
+  hutang          Decimal   @default(0) @db.Decimal(18, 4)
+  companyId       String
+  company         Company  @relation(fields: [companyId], references: [id])
+  vendorId        String
+  vendor          Vendor   @relation(fields: [vendorId], references: [id])
+  driveFileId     String?  // Google Drive File ID / URL for OCR
+  budgetStatus    String   @default("pending") // pending, budgeted, returned
+  budgetedAt      DateTime?
+  budgetedBy      String?
+  items           InvoiceItem[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model InvoiceItem {
+  id                String   @id @default(uuid())
+  invoiceId         String
+  invoice           PurchaseInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  namaBarang        String   @db.Text
+  keterangan        String?  @db.Text
+  qtyPI             Float
+  qtyPS             Float    @default(0)
+  hargaPI           Decimal  @db.Decimal(18, 4)
+  hargaPS           Decimal  @default(0) @db.Decimal(18, 4)
+  totalHarga        Decimal  @db.Decimal(18, 4)
+  statusOcr         String?  // 'Valid', 'Selisih', 'Rekening Tidak Valid', 'Tidak Valid', 'pending'
+  ocrReason         String?  @db.Text // Separate reason for discrepancy (not mixed with recommendation)
+  recommendationNote String? @db.Text
+  marketPrice       Decimal? @db.Decimal(18, 4) // Harga pasar dari AI search
+  aiRecommendation  String?  @db.Text // AI recommendation detail
+  priorityScore     Int      @default(0) // 0-100 priority scoring
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model StockItem {
+  id            String   @id @default(uuid())
+  namaBarang    String   @db.Text
+  currentQty    Float    @default(0)
+  minQty        Float    @default(0)
+  unit          String   @default("pcs")
+  category      String?
+  lastPrice     Decimal  @default(0) @db.Decimal(18, 4)
+  lastVendor    String?
+  lastPurchased DateTime?
+  notes         String?  @db.Text
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model ChatHistory {
+  id        String   @id @default(uuid())
+  role      String   // 'user' or 'assistant'
+  message   String   @db.Text
+  sessionId String
+  createdAt DateTime @default(now())
+}
+
+model Embedding {
+  id         String   @id @default(uuid())
+  sourceType String   // 'vendor', 'item', 'invoice', 'summary'
+  sourceId   String   // ID of the source record
+  content    String   @db.Text // Original text that was embedded
+  vector     String   @db.LongText // JSON array of floats
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([sourceType, sourceId])
+}
+
+// TransactionHistory is implicitly managed by querying past InvoiceItems

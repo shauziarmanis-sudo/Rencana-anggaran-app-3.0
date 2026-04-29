@@ -1,0 +1,62 @@
+// ============================================================
+// API Route: Fetch Dashboard Data (Unpaid PIs) from MySQL
+// ============================================================
+
+import { NextResponse } from 'next/server';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
+export const dynamic = 'force-dynamic';
+
+export async function GET() {
+  try {
+    const rawInvoices = await prisma.purchaseInvoice.findMany({
+      where: {
+        paymentState: { not: 'paid' }, // assuming 'paid' is fully paid
+        budgetStatus: { in: ['pending', 'returned'] }, // Hide budgeted PIs
+      },
+      include: {
+        vendor: true,
+        company: true
+      },
+      orderBy: { tglBeli: 'desc' }
+    });
+
+    const rows = rawInvoices.map(inv => {
+      const isLate = inv.tempoHari < 0; // simplistic example, can be based on diff days
+      return {
+        id: inv.id,
+        noPi: inv.noPi,
+        tglBeli: inv.tglBeli.toISOString().split('T')[0],
+        namaSupplier: inv.vendor.name,
+        namaPenerima: inv.vendor.accountName || inv.vendor.name,
+        noRekening: inv.vendor.bankAccount || '-',
+        totalPembelian: inv.totalRencanaBayar,
+        hutang: inv.hutang,
+        tempo: inv.tempoHari,
+        paymentState: inv.paymentState,
+        paymentDueState: isLate ? 'late' : 'on_time',
+        vendorCode: inv.vendor.code,
+        perusahaan: inv.company.name // New property
+      };
+    });
+
+    return NextResponse.json({
+      success: true,
+      data: rows,
+      meta: {
+        totalPayables: rows.length,
+        timestamp: new Date().toISOString(),
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching dashboard data:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to fetch data',
+      },
+      { status: 500 }
+    );
+  }
+}
