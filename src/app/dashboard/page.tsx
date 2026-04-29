@@ -73,6 +73,7 @@ const emptyStats: DashboardStats = {
 };
 
 const VENDOR_PAGE_SIZE = 50;
+const MATERIAL_PAGE_SIZE = 50;
 
 const agingLabels: Record<AgingKey, string> = {
   belumJatuhTempo: 'Belum Jatuh Tempo',
@@ -219,9 +220,11 @@ export default function DashboardPage() {
   const [selectedItem, setSelectedItem] = useState<{ itemName: string; currentPrice: number } | null>(null);
   const [selectedVendor, setSelectedVendor] = useState<VendorDebtRow | null>(null);
   const [vendorSearch, setVendorSearch] = useState('');
+  const [materialSearch, setMaterialSearch] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [vendorPage, setVendorPage] = useState(1);
+  const [materialPage, setMaterialPage] = useState(1);
 
   const fetchStats = useCallback(async () => {
     setLoading(true);
@@ -255,6 +258,10 @@ export default function DashboardPage() {
     setVendorPage(1);
   }, [vendorSearch, dateFrom, dateTo]);
 
+  useEffect(() => {
+    setMaterialPage(1);
+  }, [materialSearch, dateFrom, dateTo]);
+
   const filteredVendorDebts = useMemo(() => {
     const keyword = vendorSearch.trim().toLowerCase();
     if (!keyword) return stats.vendorDebts;
@@ -268,6 +275,20 @@ export default function DashboardPage() {
     const startIndex = (currentVendorPage - 1) * VENDOR_PAGE_SIZE;
     return filteredVendorDebts.slice(startIndex, startIndex + VENDOR_PAGE_SIZE);
   }, [currentVendorPage, filteredVendorDebts]);
+
+  const filteredMaterialTrends = useMemo(() => {
+    const keyword = materialSearch.trim().toLowerCase();
+    if (!keyword) return stats.materialTrends;
+    return stats.materialTrends.filter((row) => row.itemName.toLowerCase().includes(keyword));
+  }, [materialSearch, stats.materialTrends]);
+
+  const materialPageCount = Math.max(1, Math.ceil(filteredMaterialTrends.length / MATERIAL_PAGE_SIZE));
+  const currentMaterialPage = Math.min(materialPage, materialPageCount);
+
+  const paginatedMaterialTrends = useMemo(() => {
+    const startIndex = (currentMaterialPage - 1) * MATERIAL_PAGE_SIZE;
+    return filteredMaterialTrends.slice(startIndex, startIndex + MATERIAL_PAGE_SIZE);
+  }, [currentMaterialPage, filteredMaterialTrends]);
 
   const totals = useMemo(() => {
     const totalDebt = stats.vendorDebts.reduce((sum, row) => sum + row.totalDebt, 0);
@@ -284,11 +305,17 @@ export default function DashboardPage() {
     if (dateFrom && dateTo) return `${formatDateIndonesia(dateFrom)} - ${formatDateIndonesia(dateTo)}`;
     if (dateFrom) return `Mulai ${formatDateIndonesia(dateFrom)}`;
     if (dateTo) return `Sampai ${formatDateIndonesia(dateTo)}`;
-    return 'Material memakai tren 30 hari terakhir, hutang vendor menampilkan seluruh outstanding.';
+    return 'Material memakai seluruh histori RAW - PI, hutang vendor menampilkan seluruh outstanding.';
+  }, [dateFrom, dateTo]);
+
+  const materialMetricDescription = useMemo(() => {
+    if (dateFrom || dateTo) return 'Metrik harga bahan mengikuti filter tanggal aktif.';
+    return 'Metrik harga bahan dihitung dari seluruh histori RAW - PI.';
   }, [dateFrom, dateTo]);
 
   const resetFilters = () => {
     setVendorSearch('');
+    setMaterialSearch('');
     setDateFrom('');
     setDateTo('');
   };
@@ -536,11 +563,28 @@ export default function DashboardPage() {
           </section>
 
           <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-            <div className="mb-4">
-              <h3 className="text-base font-bold text-slate-900">Tabel Pembelian Bahan</h3>
-              <p className="text-sm text-slate-500">
-                Semua nama bahan dari RAW - PI ditampilkan. Klik baris bahan untuk melihat rincian pembelian historis.
-              </p>
+            <div className="mb-4 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+              <div>
+                <h3 className="text-base font-bold text-slate-900">Tabel Pembelian Bahan</h3>
+                <p className="text-sm text-slate-500">
+                  Menampilkan {formatNumber(paginatedMaterialTrends.length)} dari {formatNumber(filteredMaterialTrends.length)} bahan. {materialMetricDescription}
+                </p>
+              </div>
+              <label className="block w-full lg:max-w-sm">
+                <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Cari Bahan
+                </span>
+                <div className="relative">
+                  <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="search"
+                    value={materialSearch}
+                    onChange={(event) => setMaterialSearch(event.target.value)}
+                    placeholder="Ketik nama bahan..."
+                    className="w-full rounded-lg border border-slate-200 bg-white py-2.5 pl-9 pr-3 text-sm text-slate-900 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
+                  />
+                </div>
+              </label>
             </div>
 
             <div className="overflow-x-auto rounded-lg border border-slate-200">
@@ -563,14 +607,16 @@ export default function DashboardPage() {
                         Memuat data pembelian bahan...
                       </td>
                     </tr>
-                  ) : stats.materialTrends.length === 0 ? (
+                  ) : filteredMaterialTrends.length === 0 ? (
                     <tr>
                       <td colSpan={6} className="px-4 py-10 text-center text-slate-500">
-                        Belum ada nama bahan dari RAW - PI.
+                        {stats.materialTrends.length === 0
+                          ? 'Belum ada nama bahan dari RAW - PI.'
+                          : 'Tidak ada bahan yang sesuai pencarian.'}
                       </td>
                     </tr>
                   ) : (
-                    stats.materialTrends.map((row) => (
+                    paginatedMaterialTrends.map((row) => (
                       <tr
                         key={row.itemName}
                         className="cursor-pointer hover:bg-teal-50"
@@ -600,6 +646,35 @@ export default function DashboardPage() {
                   )}
                 </tbody>
               </table>
+            </div>
+
+            <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-xs text-slate-500">
+                Maksimal {formatNumber(MATERIAL_PAGE_SIZE)} bahan per halaman.
+              </p>
+              <div className="flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  disabled={currentMaterialPage <= 1}
+                  onClick={() => setMaterialPage((page) => Math.max(1, page - 1))}
+                >
+                  <ChevronLeft size={16} />
+                  Prev
+                </button>
+                <span className="min-w-24 text-center text-sm font-semibold text-slate-700">
+                  {currentMaterialPage} / {materialPageCount}
+                </span>
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  disabled={currentMaterialPage >= materialPageCount}
+                  onClick={() => setMaterialPage((page) => Math.min(materialPageCount, page + 1))}
+                >
+                  Next
+                  <ChevronRight size={16} />
+                </button>
+              </div>
             </div>
           </section>
         </div>

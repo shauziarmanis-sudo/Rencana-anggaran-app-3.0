@@ -128,13 +128,9 @@ export async function GET(request: NextRequest) {
     const endDate = parseDateParam(searchParams.get('dateTo'), 'end');
     const invoiceDateFilter = buildDateFilter(startDate, endDate);
 
-    const defaultMaterialStartDate = new Date();
-    defaultMaterialStartDate.setDate(defaultMaterialStartDate.getDate() - 30);
-    defaultMaterialStartDate.setHours(0, 0, 0, 0);
-
     const hasExplicitDateFilter = Boolean(startDate || endDate);
-    const materialStartDate = hasExplicitDateFilter ? startDate : defaultMaterialStartDate;
-    const materialEndDate = endDate;
+    const materialStartDate = hasExplicitDateFilter ? startDate : undefined;
+    const materialEndDate = hasExplicitDateFilter ? endDate : undefined;
 
     const [debtInvoices, allPurchaseItems] = await Promise.all([
       prisma.purchaseInvoice.findMany({
