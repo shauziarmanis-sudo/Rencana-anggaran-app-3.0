@@ -5,6 +5,9 @@ import { decimalToNumber } from '@/lib/decimal';
 const prisma = new PrismaClient();
 export const dynamic = 'force-dynamic';
 
+const JAKARTA_TIME_ZONE = 'Asia/Jakarta';
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
 type AgingKey =
   | 'belumJatuhTempo'
   | 'days0To7'
@@ -31,6 +34,9 @@ interface VendorDebtDetail {
   paymentState: string;
   hutang: number;
   agingBucket: AgingKey;
+  daysSincePi: number;
+  overdueDays: number;
+  dueDate: string;
 }
 
 interface MaterialTrendRow {
@@ -43,14 +49,48 @@ interface MaterialTrendRow {
   purchaseCount30d: number;
 }
 
-function getAgingKey(tempoHari: number): AgingKey {
-  if (tempoHari > 0) return 'belumJatuhTempo';
-
-  const overdueDays = Math.abs(tempoHari);
+function getAgingKey(overdueDays: number): AgingKey {
+  if (overdueDays < 0) return 'belumJatuhTempo';
   if (overdueDays <= 7) return 'days0To7';
   if (overdueDays <= 14) return 'days8To14';
   if (overdueDays <= 21) return 'days15To21';
   return 'daysOver21';
+}
+
+function getJakartaDateUtcTime(date: Date): number {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: JAKARTA_TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(date);
+
+  const valueByType = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return Date.UTC(
+    Number(valueByType.year),
+    Number(valueByType.month) - 1,
+    Number(valueByType.day)
+  );
+}
+
+function formatUtcDateOnly(utcTime: number): string {
+  return new Date(utcTime).toISOString().split('T')[0];
+}
+
+function getAgingInfo(tglBeli: Date, tempoHari: number, today = new Date()) {
+  const purchaseDateUtc = getJakartaDateUtcTime(tglBeli);
+  const todayUtc = getJakartaDateUtcTime(today);
+  const normalizedTempoHari = Number.isFinite(tempoHari) ? tempoHari : 0;
+  const daysSincePi = Math.max(0, Math.floor((todayUtc - purchaseDateUtc) / MS_PER_DAY));
+  const overdueDays = daysSincePi - normalizedTempoHari;
+  const dueDateUtc = purchaseDateUtc + normalizedTempoHari * MS_PER_DAY;
+
+  return {
+    agingBucket: getAgingKey(overdueDays),
+    daysSincePi,
+    overdueDays,
+    dueDate: formatUtcDateOnly(dueDateUtc),
+  };
 }
 
 function parseDateParam(value: string | null, boundary: 'start' | 'end'): Date | undefined {
@@ -131,7 +171,8 @@ export async function GET(request: NextRequest) {
       const vendorId = invoice.vendorId;
       const vendorName = invoice.vendor.name;
       const amount = decimalToNumber(invoice.hutang);
-      const agingKey = getAgingKey(invoice.tempoHari);
+      const agingInfo = getAgingInfo(invoice.tglBeli, invoice.tempoHari);
+      const agingKey = agingInfo.agingBucket;
       const row = vendorDebtMap.get(vendorId) ?? {
         vendorId,
         vendorName,
@@ -153,6 +194,9 @@ export async function GET(request: NextRequest) {
         paymentState: invoice.paymentState,
         hutang: amount,
         agingBucket: agingKey,
+        daysSincePi: agingInfo.daysSincePi,
+        overdueDays: agingInfo.overdueDays,
+        dueDate: agingInfo.dueDate,
       });
       vendorDebtMap.set(vendorId, row);
     }

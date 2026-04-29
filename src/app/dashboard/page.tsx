@@ -33,6 +33,9 @@ interface VendorDebtDetail {
   paymentState: string;
   hutang: number;
   agingBucket: AgingKey;
+  daysSincePi: number;
+  overdueDays: number;
+  dueDate: string;
 }
 
 interface VendorDebtRow {
@@ -119,6 +122,10 @@ function formatRangePrice(value: number, purchaseCount: number) {
   return purchaseCount > 0 ? formatRupiah(value) : '-';
 }
 
+function formatOverdueDays(overdueDays: number) {
+  return overdueDays >= 0 ? `${formatNumber(overdueDays)} hari` : 'Belum jatuh tempo';
+}
+
 function VendorDebtModal({ vendor, onClose }: { vendor: VendorDebtRow; onClose: () => void }) {
   const bucketTotals = [
     { label: 'Belum Jatuh Tempo', value: vendor.belumJatuhTempo, className: 'bg-slate-50 text-slate-800' },
@@ -160,12 +167,15 @@ function VendorDebtModal({ vendor, onClose }: { vendor: VendorDebtRow; onClose: 
           </div>
 
           <div className="overflow-x-auto rounded-lg border border-slate-200">
-            <table className="min-w-[900px] w-full border-collapse text-sm">
+            <table className="min-w-[1080px] w-full border-collapse text-sm">
               <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-600">
                 <tr>
                   <th className="px-4 py-3 text-left font-semibold">No PI</th>
                   <th className="px-4 py-3 text-center font-semibold">Tanggal PI</th>
-                  <th className="px-4 py-3 text-center font-semibold">Tempo</th>
+                  <th className="px-4 py-3 text-center font-semibold">Jatuh Tempo</th>
+                  <th className="px-4 py-3 text-center font-semibold">Termin</th>
+                  <th className="px-4 py-3 text-center font-semibold">Umur PI</th>
+                  <th className="px-4 py-3 text-center font-semibold">Overdue</th>
                   <th className="px-4 py-3 text-center font-semibold">Status</th>
                   <th className="px-4 py-3 text-center font-semibold">Aging</th>
                   <th className="px-4 py-3 text-right font-semibold">Hutang</th>
@@ -176,7 +186,16 @@ function VendorDebtModal({ vendor, onClose }: { vendor: VendorDebtRow; onClose: 
                   <tr key={invoice.noPi} className="hover:bg-slate-50">
                     <td className="px-4 py-3 font-semibold text-slate-800">{invoice.noPi}</td>
                     <td className="px-4 py-3 text-center text-slate-700">{formatDateIndonesia(invoice.tglBeli)}</td>
-                    <td className="px-4 py-3 text-center tabular-nums text-slate-700">{invoice.tempoHari}</td>
+                    <td className="px-4 py-3 text-center text-slate-700">{formatDateIndonesia(invoice.dueDate)}</td>
+                    <td className="px-4 py-3 text-center tabular-nums text-slate-700">
+                      {formatNumber(invoice.tempoHari)} hari
+                    </td>
+                    <td className="px-4 py-3 text-center tabular-nums text-slate-700">
+                      {formatNumber(invoice.daysSincePi)} hari
+                    </td>
+                    <td className="px-4 py-3 text-center tabular-nums text-slate-700">
+                      {formatOverdueDays(invoice.overdueDays)}
+                    </td>
                     <td className="px-4 py-3 text-center text-slate-700">{invoice.paymentState}</td>
                     <td className="px-4 py-3 text-center text-slate-700">{agingLabels[invoice.agingBucket]}</td>
                     <td className="px-4 py-3 text-right font-semibold tabular-nums text-slate-900">
