@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
+  BarChart3,
   FileSpreadsheet,
   Mail,
   History,
@@ -18,6 +19,7 @@ import {
 
 const navItems = [
   { href: '/', label: 'Modal Anggaran', icon: LayoutDashboard, description: 'Pilih Rekap Invoices' },
+  { href: '/dashboard', label: 'Dashboard', icon: BarChart3, description: 'Hutang & harga bahan' },
   { href: '/input', label: 'Input Manual PI', icon: FileSpreadsheet, description: 'Tambah Data Manual' },
   { href: '/upload-csv', label: 'Upload CSV', icon: FileSpreadsheet, description: 'Migrasi via File' },
   { href: '/rekap', label: 'Rekap Anggaran', icon: FileSpreadsheet, description: 'Lihat rekap pembayaran' },
