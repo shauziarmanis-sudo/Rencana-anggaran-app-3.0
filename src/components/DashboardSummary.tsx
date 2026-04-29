@@ -20,9 +20,9 @@ interface StatCardProps {
 
 function StatCard({ label, value, icon, color, format = 'none' }: StatCardProps) {
   const formattedValue = format === 'rupiah'
-    ? formatRupiah(value as number)
+    ? formatRupiah(value)
     : format === 'number'
-      ? formatNumber(value as number)
+      ? formatNumber(value)
       : value;
 
   const colorMap: Record<string, string> = {
@@ -35,8 +35,8 @@ function StatCard({ label, value, icon, color, format = 'none' }: StatCardProps)
 
   return (
     <div className={`stat-card ${color}`}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 14 }}>
+        <div style={{ minWidth: 0 }}>
           <div className="stat-label">{label}</div>
           <div className="stat-value" style={{ color: colorMap[color] }}>
             {formattedValue}
@@ -45,10 +45,10 @@ function StatCard({ label, value, icon, color, format = 'none' }: StatCardProps)
         <div style={{
           width: 44,
           height: 44,
-          borderRadius: 12,
-          background: `${colorMap[color]}15`,
-          backdropFilter: 'blur(4px)',
-          border: `1px solid ${colorMap[color]}20`,
+          flex: '0 0 44px',
+          borderRadius: 8,
+          background: `${colorMap[color]}12`,
+          border: `1px solid ${colorMap[color]}24`,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -79,8 +79,8 @@ export default function DashboardSummary({
   return (
     <div style={{
       display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-      gap: 16,
+      gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))',
+      gap: 12,
       marginBottom: 24,
     }}>
       <StatCard

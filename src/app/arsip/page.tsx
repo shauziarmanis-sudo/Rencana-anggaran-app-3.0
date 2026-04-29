@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import Sidebar from '@/components/Sidebar';
-import { formatRupiah } from '@/lib/format';
+import { formatRupiah, toFiniteNumber } from '@/lib/format';
 import {
   Archive,
   RotateCcw,
@@ -80,7 +80,7 @@ export default function ArsipPage() {
     }
   };
 
-  const totalBudgeted = data.reduce((s, d) => s + d.hutang, 0);
+  const totalBudgeted = data.reduce((s, d) => s + toFiniteNumber(d.hutang), 0);
 
   return (
     <div>
@@ -104,14 +104,14 @@ export default function ArsipPage() {
 
         <div style={{ padding: '0 32px 32px' }}>
           {/* Summary */}
-          <div className="glass-card" style={{ padding: '16px 24px', marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div className="glass-card" style={{ padding: '16px 20px', marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
             <div>
-              <span style={{ fontSize: 13, color: '#6b7280' }}>Total PI Dianggarkan:</span>
-              <span style={{ fontSize: 18, fontWeight: 700, color: '#0f766e', marginLeft: 12 }}>{data.length} PI</span>
+              <span style={{ fontSize: 12, color: '#6b7280', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Total PI Dianggarkan</span>
+              <span style={{ display: 'block', fontSize: 18, fontWeight: 700, color: '#0f766e', marginTop: 4 }}>{data.length} PI</span>
             </div>
             <div>
-              <span style={{ fontSize: 13, color: '#6b7280' }}>Total Nominal:</span>
-              <span style={{ fontSize: 18, fontWeight: 700, color: '#0f766e', marginLeft: 12 }}>{formatRupiah(totalBudgeted)}</span>
+              <span style={{ fontSize: 12, color: '#6b7280', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Total Nominal</span>
+              <span style={{ display: 'block', fontSize: 18, fontWeight: 700, color: '#0f766e', marginTop: 4, fontVariantNumeric: 'tabular-nums' }}>{formatRupiah(totalBudgeted)}</span>
             </div>
           </div>
 
@@ -197,7 +197,7 @@ export default function ArsipPage() {
                         ) : (
                           <button
                             className="btn"
-                            style={{ padding: '4px 12px', fontSize: 11, background: 'rgba(240, 253, 250, 0.7)', color: '#0f766e', border: '1px solid rgba(153, 246, 228, 0.5)' }}
+                            style={{ padding: '4px 12px', fontSize: 11, background: '#f0fdfa', color: '#0f766e', border: '1px solid #99f6e4' }}
                             onClick={() => setConfirmId(row.id)}
                             title="Kembalikan PI ini ke Modal Anggaran"
                           >

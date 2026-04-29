@@ -5,20 +5,39 @@
 /**
  * Format number to Indonesian Rupiah
  */
-export function formatRupiah(amount: number): string {
+export function toFiniteNumber(value: unknown): number {
+  if (value === null || value === undefined || value === '') return 0;
+  if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+  if (typeof value === 'string') {
+    const normalized = value.replace(/[^\d,.-]/g, '').replace(/\.(?=\d{3}(\D|$))/g, '').replace(',', '.');
+    const parsed = Number(normalized);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  const maybeDecimal = value as { toNumber?: () => number; toString?: () => string };
+  if (typeof maybeDecimal.toNumber === 'function') {
+    const parsed = maybeDecimal.toNumber();
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  const parsed = Number(maybeDecimal.toString?.() ?? value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+export function formatRupiah(amount: unknown): string {
   return new Intl.NumberFormat('id-ID', {
     style: 'currency',
     currency: 'IDR',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(amount);
+  }).format(toFiniteNumber(amount));
 }
 
 /**
  * Format number with thousand separators
  */
-export function formatNumber(num: number): string {
-  return new Intl.NumberFormat('id-ID').format(num);
+export function formatNumber(num: unknown): string {
+  return new Intl.NumberFormat('id-ID').format(toFiniteNumber(num));
 }
 
 /**

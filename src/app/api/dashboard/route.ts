@@ -4,6 +4,7 @@
 
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { decimalToNumber } from '@/lib/decimal';
 
 const prisma = new PrismaClient();
 export const dynamic = 'force-dynamic';
@@ -31,8 +32,8 @@ export async function GET() {
         namaSupplier: inv.vendor.name,
         namaPenerima: inv.vendor.accountName || inv.vendor.name,
         noRekening: inv.vendor.bankAccount || '-',
-        totalPembelian: inv.totalRencanaBayar,
-        hutang: inv.hutang,
+        totalPembelian: decimalToNumber(inv.totalRencanaBayar),
+        hutang: decimalToNumber(inv.hutang),
         tempo: inv.tempoHari,
         paymentState: inv.paymentState,
         paymentDueState: isLate ? 'late' : 'on_time',

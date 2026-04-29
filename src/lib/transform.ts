@@ -13,7 +13,7 @@ import type {
   RekapVendorGroup,
   InvoiceFile,
 } from '@/types/finance';
-import { formatDateIndonesia } from './format';
+import { formatDateIndonesia, toFiniteNumber } from './format';
 
 /**
  * Join RAW - Payable with Laporan Faktur and Master Rekening
@@ -137,7 +137,7 @@ export function buildRekapAnggaran(
       };
     });
 
-    const subtotal = rows.reduce((sum, r) => sum + r.totalRencanaBayar, 0);
+    const subtotal = rows.reduce((sum, r) => sum + toFiniteNumber(r.totalRencanaBayar), 0);
 
     result.push({
       vendorName,
@@ -164,9 +164,9 @@ export function calculateSummary(
 
   return {
     totalPI: allRows.length,
-    totalHutang: allRows.reduce((sum, r) => sum + r.hutang, 0),
+    totalHutang: allRows.reduce((sum, r) => sum + toFiniteNumber(r.hutang), 0),
     totalSelected: selectedRows.length,
-    totalSelectedNominal: selectedRows.reduce((sum, r) => sum + r.hutang, 0),
+    totalSelectedNominal: selectedRows.reduce((sum, r) => sum + toFiniteNumber(r.hutang), 0),
     uniqueVendors: uniqueVendors.size,
   };
 }

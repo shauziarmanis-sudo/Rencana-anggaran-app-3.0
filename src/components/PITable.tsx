@@ -114,7 +114,7 @@ export default function PITable({ data }: PITableProps) {
                 border: '1px solid #d1d5db',
                 fontSize: 12,
                 fontWeight: 600,
-                background: currentCompany ? 'rgba(240, 253, 250, 0.7)' : 'rgba(255, 255, 255, 0.6)',
+                background: currentCompany ? '#f0fdfa' : '#ffffff',
                 color: currentCompany ? '#0f766e' : '#0f766e',
                 cursor: 'pointer',
                 width: '100%',

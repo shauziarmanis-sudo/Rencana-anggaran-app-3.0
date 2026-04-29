@@ -65,8 +65,8 @@ export default function DashboardPage() {
               Refresh
             </button>
             <button
-              className="btn"
-              style={{ background: 'rgba(240, 253, 250, 0.7)', color: '#0f766e', border: '1px solid rgba(153, 246, 228, 0.5)', backdropFilter: 'blur(8px)' }}
+              className="btn btn-secondary"
+              style={{ color: '#0f766e', borderColor: '#99f6e4', background: '#f0fdfa' }}
               onClick={() => setShowBulkUpload(true)}
             >
               <Upload size={16} />
